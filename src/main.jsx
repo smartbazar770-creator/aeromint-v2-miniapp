@@ -1,4 +1,4 @@
-alert("AeroMint JS চলছে");
+document.body.innerHTML = "<h1 style='color:green;text-align:center;margin-top:50px'>AeroMint JS চলছে ✅</h1>";
 import React,{useEffect,useState}from"react";import{createRoot}from"react-dom/client";import{Home,ListChecks,Users,Trophy,UserRound,Gift,ChevronRight,CheckCircle2,Copy,Send,ShieldCheck,Sparkles}from"lucide-react";import"./styles.css";
 const API=import.meta.env.VITE_API_URL||"https://aeromint-v2-backend-production.up.railway.app";const tg=window.Telegram?.WebApp;
 const demo=[{id:1,title:"Join AeroMint Channel",reward:500},{id:2,title:"Daily Check-in",reward:250}];

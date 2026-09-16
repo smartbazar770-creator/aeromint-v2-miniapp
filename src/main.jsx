@@ -1,508 +1,276 @@
-import React, { useEffect, useState } from "react";
-import {
-  createRoot
-} from "react-dom/client";
-import {
-  Home,
-  ListChecks,
-  Users,
-  Trophy,
-  UserRound,
-  Gift,
-  ChevronRight,
-  CheckCircle2,
-  Copy,
-  Send,
-  ShieldCheck,
-  Sparkles
-} from "lucide-react";
-import "./styles.css";
+import "dotenv/config";
+import { Telegraf, Markup } from "telegraf";
 
-const API =
-  import.meta.env.VITE_API_URL ||
-  "https://aeromint-v2-backend-production.up.railway.app";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBAPP_URL =
+  process.env.WEBAPP_URL ||
+  "https://smartbazar770-creator.github.io/aeromint-v2-miniapp/";
 
-const tg = window.Telegram?.WebApp;
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN is missing in Railway Variables");
+}
 
-const demo = [
-  {
-    id: 1,
-    title: "Join AeroMint Channel",
-    reward: 500
-  },
-  {
-    id: 2,
-    title: "Daily Check-in",
-    reward: 250
-  }
-];
+const bot = new Telegraf(BOT_TOKEN);
 
-function App() {
-  const [tab, setTab] = useState("home");
+// ─────────────────────────────────────
+// START
+// ─────────────────────────────────────
 
-  const [d, setD] = useState({
-    points: 0,
-    level: 1,
-    dailyProgress: 0
-  });
+bot.start(async (ctx) => {
+  const user = ctx.from;
 
-  const [tasks, setTasks] = useState(demo);
+  const firstName = user.first_name || "AeroMiner";
 
-  useEffect(() => {
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor("#07130d");
-      tg.setBackgroundColor("#07130d");
-    }
+  await ctx.reply(
+    `🌿 Welcome to AeroMint, ${firstName}!\n\n` +
+      `🚀 Complete tasks\n` +
+      `🎁 Claim daily rewards\n` +
+      `👥 Invite friends\n` +
+      `🏆 Climb the leaderboard\n\n` +
+      `Open the AeroMint Mini App below 👇`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🚀 Open AeroMint",
+          WEBAPP_URL
+        )
+      ],
+      [
+        Markup.button.callback(
+          "📖 How it works",
+          "how_it_works"
+        )
+      ]
+    ])
+  );
+});
 
-    Promise.all([
-      fetch(API + "/api/dashboard")
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
+// ─────────────────────────────────────
+// APP
+// ─────────────────────────────────────
 
-      fetch(API + "/api/tasks")
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null)
-    ]).then(([a, b]) => {
-      if (a) setD(a);
-      if (Array.isArray(b)) setTasks(b);
-    });
-  }, []);
+bot.command("app", async (ctx) => {
+  await ctx.reply(
+    "🚀 Open your AeroMint Mini App:",
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🚀 Open AeroMint",
+          WEBAPP_URL
+        )
+      ]
+    ])
+  );
+});
 
-  const u = tg?.initDataUnsafe?.user;
+// ─────────────────────────────────────
+// HELP
+// ─────────────────────────────────────
 
-  const n = u?.first_name || "AeroMiner";
+bot.command("help", async (ctx) => {
+  await ctx.reply(
+    `🌿 AeroMint Help\n\n` +
+      `🚀 /start — Open AeroMint\n` +
+      `📱 /app — Open Mini App\n` +
+      `👤 /profile — Your profile\n` +
+      `🎯 /tasks — Available tasks\n` +
+      `👥 /referral — Referral section\n` +
+      `🏆 /rank — Leaderboard\n\n` +
+      `All rewards and account data are managed through the AeroMint Mini App.`
+  );
+});
 
-  const un = u?.username
-    ? "@" + u.username
+// ─────────────────────────────────────
+// PROFILE
+// ─────────────────────────────────────
+
+bot.command("profile", async (ctx) => {
+  const user = ctx.from;
+
+  const name = user.first_name || "AeroMiner";
+  const username = user.username
+    ? `@${user.username}`
     : "Telegram User";
 
-  const ref = u?.id
-    ? `https://t.me/AeroMintXBot?start=ref_${u.id}`
-    : "https://t.me/AeroMintXBot";
-
-  const copy = async () => {
-    await navigator.clipboard?.writeText(ref);
-
-    tg?.showPopup?.({
-      title: "Referral link",
-      message: "Link copied!",
-      buttons: [{ type: "ok" }]
-    });
-  };
-
-  return (
-    <div className="app">
-
-      <header>
-        <div className="brand">
-          <div className="logo">
-            <Sparkles />
-          </div>
-
-          <div>
-            <b>AeroMint</b>
-            <small>Airdrop Hub</small>
-          </div>
-        </div>
-
-        <span className="secure">
-          <ShieldCheck />
-          Secure
-        </span>
-      </header>
-
-      <main>
-
-        {tab === "home" && (
-          <>
-            <section className="hero card">
-
-              <p>
-                Welcome back, {n} 👋
-              </p>
-
-              <div className="balance">
-                {(d.points || 0).toLocaleString()}
-                <i> AMT</i>
-              </div>
-
-              <small>
-                Available balance
-              </small>
-
-              <div className="level">
-                <span>
-                  Level {d.level || 1}
-                </span>
-
-                <span>
-                  {d.dailyProgress || 0}% progress
-                </span>
-              </div>
-
-              <div className="progress">
-                <div
-                  style={{
-                    width: `${Math.min(
-                      d.dailyProgress || 0,
-                      100
-                    )}%`
-                  }}
-                />
-              </div>
-
-            </section>
-
-            <div className="stats">
-
-              <Stat
-                icon={<Gift />}
-                label="Daily reward"
-                value="+250 AMT"
-              />
-
-              <Stat
-                icon={<Users />}
-                label="Referrals"
-                value="1"
-              />
-
-              <Stat
-                icon={<Trophy />}
-                label="Rank"
-                value="#—"
-              />
-
-            </div>
-
-            <Title t="Quick actions" />
-
-            <div className="grid">
-
-              <Action
-                t="Complete Tasks"
-                s="Earn AMT"
-                icon={<ListChecks />}
-                go={() => setTab("tasks")}
-              />
-
-              <Action
-                t="Invite Friends"
-                s="Grow your team"
-                icon={<Users />}
-                go={() => setTab("invite")}
-              />
-
-            </div>
-
-            <Title t="Daily check-in" />
-
-            <div className="daily card">
-
-              <Gift />
-
-              <div>
-                <b>Claim your daily reward</b>
-
-                <small>
-                  Come back every day for more AMT
-                </small>
-              </div>
-
-              <button
-                onClick={() => setTab("tasks")}
-              >
-                Claim
-              </button>
-
-            </div>
-          </>
-        )}
-
-        {tab === "tasks" && (
-          <>
-            <Page
-              t="Tasks"
-              s="Complete activities to earn AMT"
-            />
-
-            {tasks.map((x) => (
-              <div
-                className="task card"
-                key={x.id}
-              >
-                <div className="ico">
-                  <ListChecks />
-                </div>
-
-                <div>
-                  <b>{x.title}</b>
-
-                  <small>
-                    Reward: {x.reward} AMT
-                  </small>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setTasks((q) =>
-                      q.map((z) =>
-                        z.id === x.id
-                          ? { ...z, done: true }
-                          : z
-                      )
-                    )
-                  }
-                >
-                  {x.done ? (
-                    <CheckCircle2 />
-                  ) : (
-                    "Start"
-                  )}
-                </button>
-
-              </div>
-            ))}
-
-            <div className="notice">
-              Rewards will be enabled after secure
-              Telegram verification and server-side
-              task verification.
-            </div>
-          </>
-        )}
-
-        {tab === "invite" && (
-          <>
-            <Page
-              t="Invite & Earn"
-              s="Invite friends and grow your team"
-            />
-
-            <section className="invite card">
-
-              <Users />
-
-              <h2>
-                Build your team
-              </h2>
-
-              <p>
-                Share your referral link with friends
-                on Telegram.
-              </p>
-
-              <div className="ref">
-
-                <span>
-                  {ref}
-                </span>
-
-                <button onClick={copy}>
-                  <Copy />
-                </button>
-
-              </div>
-
-              <button
-                className="primary"
-                onClick={() =>
-                  tg?.openTelegramLink?.(
-                    "https://t.me/share/url?url=" +
-                      encodeURIComponent(ref)
-                  )
-                }
-              >
-                <Send />
-                Share link
-              </button>
-
-            </section>
-          </>
-        )}
-
-        {tab === "rank" && (
-          <>
-            <Page
-              t="Leaderboard"
-              s="Top AeroMiners by AMT points"
-            />
-
-            <section className="empty card">
-
-              <Trophy />
-
-              <h2>
-                Leaderboard coming next
-              </h2>
-
-              <p>
-                The ranking API will be connected to
-                PostgreSQL next.
-              </p>
-
-            </section>
-          </>
-        )}
-
-        {tab === "profile" && (
-          <>
-            <Page
-              t="Profile"
-              s="Your AeroMint account"
-            />
-
-            <section className="profile card">
-
-              <div className="avatar">
-                {n[0].toUpperCase()}
-              </div>
-
-              <h2>
-                {n}
-              </h2>
-
-              <p>
-                {un}
-              </p>
-
-              <div className="rows">
-
-                <div>
-                  <span>Balance</span>
-
-                  <b>
-                    {(d.points || 0).toLocaleString()} AMT
-                  </b>
-                </div>
-
-                <div>
-                  <span>Level</span>
-
-                  <b>
-                    {d.level || 1}
-                  </b>
-                </div>
-
-                <div>
-                  <span>Telegram ID</span>
-
-                  <b>
-                    {u?.id || "—"}
-                  </b>
-                </div>
-
-              </div>
-
-            </section>
-          </>
-        )}
-
-      </main>
-
-      <nav>
-
-        <Nav
-          a={tab === "home"}
-          t="Home"
-          i={<Home />}
-          go={() => setTab("home")}
-        />
-
-        <Nav
-          a={tab === "tasks"}
-          t="Tasks"
-          i={<ListChecks />}
-          go={() => setTab("tasks")}
-        />
-
-        <Nav
-          a={tab === "invite"}
-          t="Invite"
-          i={<Users />}
-          go={() => setTab("invite")}
-        />
-
-        <Nav
-          a={tab === "rank"}
-          t="Rank"
-          i={<Trophy />}
-          go={() => setTab("rank")}
-        />
-
-        <Nav
-          a={tab === "profile"}
-          t="Profile"
-          i={<UserRound />}
-          go={() => setTab("profile")}
-        />
-
-      </nav>
-
-    </div>
+  await ctx.reply(
+    `👤 AeroMint Profile\n\n` +
+      `Name: ${name}\n` +
+      `Username: ${username}\n` +
+      `Telegram ID: ${user.id}\n\n` +
+      `Open the Mini App to view your full balance, level and activity.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "👤 Open Profile",
+          WEBAPP_URL
+        )
+      ]
+    ])
   );
-}
+});
 
-function Stat({ icon, label, value }) {
-  return (
-    <div className="stat card">
-      {icon}
+// ─────────────────────────────────────
+// TASKS
+// ─────────────────────────────────────
 
-      <div>
-        <small>{label}</small>
-        <b>{value}</b>
-      </div>
-    </div>
+bot.command("tasks", async (ctx) => {
+  await ctx.reply(
+    `🎯 AeroMint Tasks\n\n` +
+      `Complete available tasks inside the Mini App and check your progress there.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🎯 View Tasks",
+          WEBAPP_URL
+        )
+      ]
+    ])
   );
-}
+});
 
-function Action({ t, s, icon, go }) {
-  return (
-    <button
-      className="action card"
-      onClick={go}
-    >
-      <span>
-        {icon}
-      </span>
+// ─────────────────────────────────────
+// REFERRAL
+// ─────────────────────────────────────
 
-      <div>
-        <b>{t}</b>
-        <small>{s}</small>
-      </div>
+bot.command("referral", async (ctx) => {
+  const userId = ctx.from.id;
 
-      <ChevronRight />
-    </button>
+  const referralLink =
+    `https://t.me/AeroMintXBot?start=ref_${userId}`;
+
+  await ctx.reply(
+    `👥 Invite & Earn\n\n` +
+      `Share your personal AeroMint referral link with friends.\n\n` +
+      `🔗 Your referral link:\n${referralLink}`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.url(
+          "📤 Share Referral Link",
+          `https://t.me/share/url?url=${encodeURIComponent(
+            referralLink
+          )}`
+        )
+      ],
+      [
+        Markup.button.webApp(
+          "👥 Open Invite",
+          WEBAPP_URL
+        )
+      ]
+    ])
   );
-}
+});
 
-function Title({ t }) {
-  return <h3>{t}</h3>;
-}
+// ─────────────────────────────────────
+// RANK
+// ─────────────────────────────────────
 
-function Page({ t, s }) {
-  return (
-    <div className="page">
-      <h1>{t}</h1>
-      <p>{s}</p>
-    </div>
+bot.command("rank", async (ctx) => {
+  await ctx.reply(
+    `🏆 AeroMint Leaderboard\n\n` +
+      `See the latest leaderboard inside the Mini App.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🏆 View Leaderboard",
+          WEBAPP_URL
+        )
+      ]
+    ])
   );
-}
+});
 
-function Nav({ a, t, i, go }) {
-  return (
-    <button
-      className={a ? "active" : ""}
-      onClick={go}
-    >
-      {i}
-      <span>{t}</span>
-    </button>
+// ─────────────────────────────────────
+// DAILY
+// ─────────────────────────────────────
+
+bot.command("daily", async (ctx) => {
+  await ctx.reply(
+    `🎁 Daily Reward\n\n` +
+      `Open AeroMint to check and claim today's available reward.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🎁 Claim Daily Reward",
+          WEBAPP_URL
+        )
+      ]
+    ])
   );
-}
+});
 
-createRoot(
-  document.getElementById("root")
-).render(<App />);
+// ─────────────────────────────────────
+// BALANCE
+// ─────────────────────────────────────
+
+bot.command("balance", async (ctx) => {
+  await ctx.reply(
+    `🪙 Your AeroMint balance is available inside the Mini App.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🪙 View Balance",
+          WEBAPP_URL
+        )
+      ]
+    ])
+  );
+});
+
+// ─────────────────────────────────────
+// HOW IT WORKS
+// ─────────────────────────────────────
+
+bot.action("how_it_works", async (ctx) => {
+  await ctx.answerCbQuery();
+
+  await ctx.reply(
+    `🌿 How AeroMint Works\n\n` +
+      `1️⃣ Open the Mini App\n` +
+      `2️⃣ Complete available tasks\n` +
+      `3️⃣ Check your daily reward\n` +
+      `4️⃣ Invite friends\n` +
+      `5️⃣ Track your progress and rank\n\n` +
+      `Your account information is managed through the AeroMint system.`
+  );
+});
+
+// ─────────────────────────────────────
+// UNKNOWN COMMAND / MESSAGE
+// ─────────────────────────────────────
+
+bot.on("text", async (ctx) => {
+  await ctx.reply(
+    `🌿 Welcome to AeroMint!\n\n` +
+      `Use the button below to open the AeroMint Mini App.`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.webApp(
+          "🚀 Open AeroMint",
+          WEBAPP_URL
+        )
+      ]
+    ])
+  );
+});
+
+// ─────────────────────────────────────
+// ERROR HANDLER
+// ─────────────────────────────────────
+
+bot.catch((error) => {
+  console.error("AeroMint Bot Error:", error);
+});
+
+// ─────────────────────────────────────
+// START BOT
+// ─────────────────────────────────────
+
+bot.launch().then(() => {
+  console.log("🚀 AeroMint Telegram Bot is running");
+  console.log(`🌐 Mini App: ${WEBAPP_URL}`);
+});
+
+// Graceful shutdown
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));

@@ -1,3 +1,4 @@
+import "./styles.css";
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
